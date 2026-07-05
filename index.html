@@ -54,11 +54,9 @@
     <button class="btn" onclick="verifyDevice()">Verify My Device ✅</button>
 
     <script>
-        // Initialize Telegram WebApp
         Telegram.WebApp.ready();
         Telegram.WebApp.expand();
 
-        // Helper to read secure cookies
         function getCookie(name) {
             let matches = document.cookie.match(new RegExp(
                 "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
@@ -66,7 +64,6 @@
             return matches ? decodeURIComponent(matches[1]) : undefined;
         }
 
-        // Helper to write secure cookies (Expires in 10 years)
         function setCookie(name, value, days) {
             let d = new Date();
             d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
@@ -74,7 +71,6 @@
             document.cookie = name + "=" + encodeURIComponent(value) + ";" + expires + ";path=/;SameSite=Lax;Secure";
         }
 
-        // Generates a highly unique, random 32-character ID (UUID)
         function generateUUID() {
             const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
             let result = '';
@@ -85,24 +81,32 @@
         }
 
         function getPersistentDeviceID() {
-            // 1. Attempt to read device ID from LocalStorage
-            let deviceId = localStorage.getItem("tbc_device_id");
+            let deviceId = null;
             
-            // 2. Fallback: Attempt to read device ID from Cookies
-            if (!deviceId) {
-                deviceId = getCookie("tbc_device_id");
+            // Safe try-catch wrapper to handle blocked storage/cookie settings
+            try {
+                deviceId = localStorage.getItem("tbc_device_id");
+                if (!deviceId || deviceId === "null" || deviceId === "undefined") {
+                    deviceId = getCookie("tbc_device_id");
+                }
+            } catch (e) {
+                deviceId = null;
             }
             
-            // 3. If still empty, this is a completely new unique physical device/profile
-            if (!deviceId) {
+            // If empty, generate a unique dynamic session ID
+            if (!deviceId || deviceId === "null" || deviceId === "undefined") {
                 deviceId = generateUUID();
-                // Store in both storage engines for maximum persistence
-                localStorage.setItem("tbc_device_id", deviceId);
-                setCookie("tbc_device_id", deviceId, 3650); // 10 years
+                try {
+                    localStorage.setItem("tbc_device_id", deviceId);
+                    setCookie("tbc_device_id", deviceId, 3650); // 10 years
+                } catch (e) {
+                    // Safe fallback if the browser completely blocks storage access
+                }
             } else {
-                // Ensure both storages are synchronized with the unique ID
-                localStorage.setItem("tbc_device_id", deviceId);
-                setCookie("tbc_device_id", deviceId, 3650);
+                try {
+                    localStorage.setItem("tbc_device_id", deviceId);
+                    setCookie("tbc_device_id", deviceId, 3650);
+                } catch (e) {}
             }
             
             return "hw_" + deviceId;
