@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Device Verification</title>
+    <!-- Include Telegram WebApp JS library -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -53,36 +54,62 @@
     <button class="btn" onclick="verifyDevice()">Verify My Device ✅</button>
 
     <script>
+        // Initialize Telegram WebApp
         Telegram.WebApp.ready();
         Telegram.WebApp.expand();
 
-        function getHardwareFingerprint() {
-            try {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                ctx.textBaseline = "top";
-                ctx.font = "14px 'Arial'";
-                ctx.fillStyle = "#f60";
-                ctx.fillRect(125, 1, 62, 20);
-                ctx.fillStyle = "#069";
-                ctx.fillText("FLEXI_FLASH_ANTI_CHEAT_2026", 2, 15);
-                ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-                ctx.fillText("FLEXI_FLASH_ANTI_CHEAT_2026", 4, 17);
-                const dataUrl = canvas.toDataURL();
-                
-                let h = 5381;
-                for (let i = 0; i < dataUrl.length; i++) {
-                    h = ((h << 5) + h) + dataUrl.charCodeAt(i);
-                    h &= 0xFFFFFFFF;
-                }
-                return "hw_" + Math.abs(h);
-            } catch (e) {
-                return "hw_fallback_" + Math.floor(Math.random() * 100000);
+        // Helper to read secure cookies
+        function getCookie(name) {
+            let matches = document.cookie.match(new RegExp(
+                "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+            ));
+            return matches ? decodeURIComponent(matches[1]) : undefined;
+        }
+
+        // Helper to write secure cookies (Expires in 10 years)
+        function setCookie(name, value, days) {
+            let d = new Date();
+            d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+            let expires = "expires=" + d.toUTCString();
+            document.cookie = name + "=" + encodeURIComponent(value) + ";" + expires + ";path=/;SameSite=Lax;Secure";
+        }
+
+        // Generates a highly unique, random 32-character ID (UUID)
+        function generateUUID() {
+            const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            let result = '';
+            for (let i = 0; i < 32; i++) {
+                result += chars[Math.floor(Math.random() * chars.length)];
             }
+            return "dev_" + result;
+        }
+
+        function getPersistentDeviceID() {
+            // 1. Attempt to read device ID from LocalStorage
+            let deviceId = localStorage.getItem("tbc_device_id");
+            
+            // 2. Fallback: Attempt to read device ID from Cookies
+            if (!deviceId) {
+                deviceId = getCookie("tbc_device_id");
+            }
+            
+            // 3. If still empty, this is a completely new unique physical device/profile
+            if (!deviceId) {
+                deviceId = generateUUID();
+                // Store in both storage engines for maximum persistence
+                localStorage.setItem("tbc_device_id", deviceId);
+                setCookie("tbc_device_id", deviceId, 3650); // 10 years
+            } else {
+                // Ensure both storages are synchronized with the unique ID
+                localStorage.setItem("tbc_device_id", deviceId);
+                setCookie("tbc_device_id", deviceId, 3650);
+            }
+            
+            return "hw_" + deviceId;
         }
 
         function verifyDevice() {
-            const fingerprint = getHardwareFingerprint();
+            const fingerprint = getPersistentDeviceID();
             Telegram.WebApp.sendData(fingerprint);
         }
     </script>
