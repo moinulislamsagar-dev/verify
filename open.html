@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Open Bot</title>
+  <title>Opening Bot...</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
@@ -20,85 +20,98 @@
       box-sizing: border-box;
       text-align: center;
     }
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border-left-color: #248bda;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
     .btn {
       background-color: #248bda;
       color: #ffffff;
       border: none;
       border-radius: 12px;
-      padding: 18px 32px;
-      font-size: 18px;
+      padding: 16px 28px;
+      font-size: 16px;
       font-weight: bold;
       cursor: pointer;
-      width: 100%;
-      max-width: 320px;
+      margin-top: 15px;
+      display: none;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-    .btn:active {
-      background-color: #1c74b4;
     }
     p {
       color: #708499;
-      font-size: 14px;
-      margin-top: 16px;
+      font-size: 15px;
+      margin: 0;
     }
   </style>
 </head>
 <body>
 
-  <button id="openBtn" class="btn">🚀 Open Bot Now</button>
-  <p>Tap above to launch the bot directly</p>
+  <div class="spinner"></div>
+  <p id="txt">Opening Bot...</p>
+  <button id="manualBtn" class="btn">🚀 Tap Here to Open Bot</button>
 
   <script>
-    // Initialize Telegram WebApp
+    // Initialize Telegram WebApp SDK
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
     }
 
-    // Safely parse URL parameter
-    function getTargetLink() {
-      const fullQuery = window.location.search;
-      if (fullQuery.includes('link=')) {
-        return fullQuery.substring(fullQuery.indexOf('link=') + 5);
-      } else if (fullQuery.includes('url=')) {
-        return fullQuery.substring(fullQuery.indexOf('url=') + 4);
+    // Safely parse URL query string
+    function extractLink() {
+      const search = window.location.search;
+      if (!search) return null;
+      if (search.includes('link=')) {
+        return search.substring(search.indexOf('link=') + 5);
+      } else if (search.includes('url=')) {
+        return search.substring(search.indexOf('url=') + 4);
       }
       return null;
     }
 
-    let rawLink = getTargetLink();
-    let targetLink = rawLink ? decodeURIComponent(rawLink) : '';
-
-    if (targetLink && !targetLink.startsWith('http://') && !targetLink.startsWith('https://') && !targetLink.startsWith('tg://')) {
-      targetLink = 'https://' + targetLink;
-    }
-
-    function doRedirect() {
-      if (!targetLink) return;
-
-      try {
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
-          window.Telegram.WebApp.openTelegramLink(targetLink);
-        } else {
-          window.location.href = targetLink;
-        }
-      } catch (e) {
-        window.location.href = targetLink;
+    let raw = extractLink();
+    if (raw) {
+      let target = decodeURIComponent(raw);
+      if (!target.startsWith('http://') && !target.startsWith('https://') && !target.startsWith('tg://')) {
+        target = 'https://' + target;
       }
 
-      // Auto-close Mini App overlay
-      setTimeout(function() {
-        if (window.Telegram && window.Telegram.WebApp) {
-          window.Telegram.WebApp.close();
+      function launch() {
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+          try {
+            window.Telegram.WebApp.openTelegramLink(target);
+          } catch(e) {
+            window.location.href = target;
+          }
+        } else {
+          window.location.href = target;
         }
-      }, 100);
+      }
+
+      // Attach button fallback listener
+      const btn = document.getElementById('manualBtn');
+      btn.addEventListener('click', launch);
+
+      // Execute launch after SDK registers
+      setTimeout(launch, 200);
+
+      // Display manual button if browser security blocks automatic launch
+      setTimeout(function() {
+        btn.style.display = 'inline-block';
+      }, 1000);
+
+    } else {
+      document.getElementById('txt').innerText = 'No destination link provided.';
     }
-
-    // Physical touch listener (bypasses Telegram mobile block)
-    document.getElementById('openBtn').addEventListener('click', doRedirect);
-
-    // Initial auto-attempt
-    doRedirect();
   </script>
 </body>
 </html>
