@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Opening Bot...</title>
+  <title>Open Bot</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
@@ -32,31 +32,34 @@
       width: 100%;
       max-width: 300px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      margin-top: 15px;
+      text-decoration: none;
+      display: inline-block;
+      box-sizing: border-box;
     }
     .btn:active {
       background-color: #1c74b4;
     }
     p {
       color: #708499;
-      font-size: 15px;
-      margin: 0;
+      font-size: 14px;
+      margin-top: 16px;
     }
   </style>
 </head>
 <body>
 
-  <p id="txt">Opening Bot...</p>
-  <button id="openBtn" class="btn">🚀 Open Bot Now</button>
+  <!-- Pure HTML Hyperlink Button (Bypasses WebApp JS Cross-Bot Block) -->
+  <a id="targetAnchor" href="#" class="btn">🚀 Open Bot Now</a>
+  <p id="msg">Tap the button above to launch the target bot</p>
 
   <script>
-    // Initialize WebApp SDK
+    // Expand Telegram WebApp SDK
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
     }
 
-    // Safely extract parameter
+    // Safely parse URL query string
     function getRawLink() {
       const search = window.location.search;
       if (!search) return null;
@@ -68,20 +71,6 @@
       return null;
     }
 
-    // Convert https://t.me/BotName?start=123 to native tg://resolve scheme
-    function getTgScheme(url) {
-      let clean = url.replace('https://', '').replace('http://', '').replace('t.me/', '').replace('tg://resolve?domain=', '');
-      if (clean.includes('?')) {
-        let parts = clean.split('?');
-        let domain = parts[0].split('/')[0].replace('@', '').trim();
-        let param = parts[1].replace('startapp=', '').replace('start=', '').replace('ref=', '').trim();
-        return 'tg://resolve?domain=' + domain + '&start=' + param;
-      } else {
-        let domain = clean.split('/')[0].replace('@', '').trim();
-        return 'tg://resolve?domain=' + domain;
-      }
-    }
-
     let raw = getRawLink();
 
     if (raw) {
@@ -90,31 +79,21 @@
         target = 'https://' + target;
       }
 
-      let tgScheme = getTgScheme(target);
+      const anchor = document.getElementById('targetAnchor');
+      anchor.href = target;
 
-      function doOpen() {
-        // Method 1: WebApp SDK call
+      // Event listener for WebApp SDK fallback
+      anchor.addEventListener('click', function() {
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
           try {
             window.Telegram.WebApp.openTelegramLink(target);
           } catch(e) {}
         }
-        
-        // Method 2: Dual Native protocol fallback
-        setTimeout(function() {
-          window.location.href = tgScheme;
-        }, 100);
-      }
-
-      // Bind physical touch listener
-      document.getElementById('openBtn').addEventListener('click', doOpen);
-      
-      // Auto-launch attempt
-      setTimeout(doOpen, 150);
+      });
 
     } else {
-      document.getElementById('txt').innerText = 'No link specified.';
-      document.getElementById('openBtn').style.display = 'none';
+      document.getElementById('msg').innerText = 'No link specified.';
+      document.getElementById('targetAnchor').style.display = 'none';
     }
   </script>
 </body>
