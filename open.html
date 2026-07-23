@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Opening Bot...</title>
+  <title>Open Bot</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
@@ -20,72 +20,52 @@
       box-sizing: border-box;
       text-align: center;
     }
-    .spinner {
-      border: 4px solid rgba(255, 255, 255, 0.1);
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      border-left-color: #248bda;
-      animation: spin 0.8s linear infinite;
-      margin-bottom: 16px;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
     .btn {
       background-color: #248bda;
       color: #ffffff;
       border: none;
       border-radius: 12px;
-      padding: 16px 28px;
-      font-size: 16px;
+      padding: 18px 32px;
+      font-size: 18px;
       font-weight: bold;
       cursor: pointer;
-      margin-top: 15px;
-      display: none;
+      width: 100%;
+      max-width: 300px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    .btn:active {
+      background-color: #1c74b4;
     }
     p {
       color: #708499;
-      font-size: 15px;
-      margin: 0;
+      font-size: 14px;
+      margin-top: 16px;
     }
   </style>
 </head>
 <body>
 
-  <div class="spinner"></div>
-  <p id="txt">Opening Bot...</p>
-  <button id="manualBtn" class="btn">🚀 Tap Here to Open Bot</button>
+  <button id="openBtn" class="btn">🚀 Launch Bot</button>
+  <p id="msg">Tap the button above to start the bot</p>
 
   <script>
-    // Initialize Telegram WebApp SDK
+    // Initialize WebApp SDK
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
     }
 
-    // Parse URL query string
-    function extractLink() {
-      const search = window.location.search;
-      if (!search) return null;
-      if (search.includes('link=')) {
-        return search.substring(search.indexOf('link=') + 5);
-      } else if (search.includes('url=')) {
-        return search.substring(search.indexOf('url=') + 4);
-      }
-      return null;
-    }
+    // Extract referral link query parameter
+    const search = window.location.search;
+    let raw = search.includes('link=') ? search.substring(search.indexOf('link=') + 5) : (search.includes('url=') ? search.substring(search.indexOf('url=') + 4) : null);
 
-    let raw = extractLink();
     if (raw) {
       let target = decodeURIComponent(raw);
       if (!target.startsWith('http://') && !target.startsWith('https://') && !target.startsWith('tg://')) {
         target = 'https://' + target;
       }
 
-      function launchAndClose() {
+      function openBot() {
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
           try {
             window.Telegram.WebApp.openTelegramLink(target);
@@ -95,29 +75,16 @@
         } else {
           window.location.href = target;
         }
-
-        // CLOSE WEB APP WINDOW IMMEDIATELY
-        setTimeout(function() {
-          if (window.Telegram && window.Telegram.WebApp) {
-            window.Telegram.WebApp.close();
-          }
-        }, 100);
       }
 
-      // Attach button click listener
-      const btn = document.getElementById('manualBtn');
-      btn.addEventListener('click', launchAndClose);
-
-      // Execute auto-launch
-      setTimeout(launchAndClose, 150);
-
-      // Display manual button if auto-launch is blocked by mobile client
-      setTimeout(function() {
-        btn.style.display = 'inline-block';
-      }, 800);
-
+      // Physical button click listener
+      document.getElementById('openBtn').addEventListener('click', openBot);
+      
+      // Initial launch attempt
+      setTimeout(openBot, 100);
     } else {
-      document.getElementById('txt').innerText = 'No destination link provided.';
+      document.getElementById('msg').innerText = 'No link provided.';
+      document.getElementById('openBtn').style.display = 'none';
     }
   </script>
 </body>
