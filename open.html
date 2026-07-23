@@ -66,7 +66,7 @@
       window.Telegram.WebApp.expand();
     }
 
-    // Safely parse URL query string
+    // Parse URL query string
     function extractLink() {
       const search = window.location.search;
       if (!search) return null;
@@ -85,7 +85,7 @@
         target = 'https://' + target;
       }
 
-      function launch() {
+      function launchAndClose() {
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
           try {
             window.Telegram.WebApp.openTelegramLink(target);
@@ -95,19 +95,26 @@
         } else {
           window.location.href = target;
         }
+
+        // CLOSE WEB APP WINDOW IMMEDIATELY
+        setTimeout(function() {
+          if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.close();
+          }
+        }, 100);
       }
 
-      // Attach button fallback listener
+      // Attach button click listener
       const btn = document.getElementById('manualBtn');
-      btn.addEventListener('click', launch);
+      btn.addEventListener('click', launchAndClose);
 
-      // Execute launch after SDK registers
-      setTimeout(launch, 200);
+      // Execute auto-launch
+      setTimeout(launchAndClose, 150);
 
-      // Display manual button if browser security blocks automatic launch
+      // Display manual button if auto-launch is blocked by mobile client
       setTimeout(function() {
         btn.style.display = 'inline-block';
-      }, 1000);
+      }, 800);
 
     } else {
       document.getElementById('txt').innerText = 'No destination link provided.';
