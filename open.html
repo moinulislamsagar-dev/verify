@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opening Bot...</title>
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      background-color: #17212b;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border-left-color: #5288c1;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    p {
+      font-size: 16px;
+      color: #708499;
+    }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <p>Redirecting to Bot...</p>
+
+  <script>
+    // Initialize Telegram WebApp SDK
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+
+    // Get query parameter "link" or "redirect"
+    const urlParams = new URLSearchParams(window.location.search);
+    let targetLink = urlParams.get('link') || urlParams.get('redirect') || urlParams.get('url');
+
+    if (targetLink) {
+      targetLink = decodeURIComponent(targetLink);
+
+      // Ensure protocol format
+      if (!targetLink.startsWith('http://') && !targetLink.startsWith('https://') && !targetLink.startsWith('tg://')) {
+        targetLink = 'https://' + targetLink;
+      }
+
+      // Execute Telegram native deep-link forwarder
+      try {
+        window.Telegram.WebApp.openTelegramLink(targetLink);
+      } catch(e) {
+        window.location.href = targetLink;
+      }
+
+      // Automatically close overlay window after 300ms
+      setTimeout(() => {
+        window.Telegram.WebApp.close();
+      }, 300);
+    } else {
+      document.querySelector('p').innerText = 'Invalid redirect link provided.';
+    }
+  </script>
+</body>
+</html>
