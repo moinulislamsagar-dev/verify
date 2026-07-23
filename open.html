@@ -3,121 +3,130 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Opening Bot...</title>
+  <title>Open Bot</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       background-color: #17212b;
       color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      margin: 0;
-      padding: 20px;
-      box-sizing: border-box;
+      min-height: 100vh;
+      padding: 24px;
       text-align: center;
     }
-    .spinner {
-      border: 4px solid rgba(255, 255, 255, 0.1);
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      border-left-color: #248bda;
-      animation: spin 0.8s linear infinite;
+    .container {
+      width: 100%;
+      max-width: 340px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .icon {
+      font-size: 48px;
       margin-bottom: 16px;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #ffffff;
+    }
+    p {
+      font-size: 14px;
+      color: #708499;
+      margin-bottom: 24px;
+      line-height: 1.4;
     }
     .btn {
+      width: 100%;
       background-color: #248bda;
       color: #ffffff;
       border: none;
-      border-radius: 12px;
-      padding: 16px 28px;
-      font-size: 16px;
-      font-weight: bold;
+      border-radius: 14px;
+      padding: 16px 24px;
+      font-size: 17px;
+      font-weight: 600;
       cursor: pointer;
-      margin-top: 15px;
-      display: none;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 14px rgba(36, 139, 218, 0.35);
+      transition: transform 0.1s ease, background-color 0.2s ease;
+      text-decoration: none;
+      display: block;
     }
-    p {
-      color: #708499;
-      font-size: 15px;
-      margin: 0;
+    .btn:active {
+      transform: scale(0.98);
+      background-color: #1c74b4;
     }
   </style>
 </head>
 <body>
 
-  <div class="spinner"></div>
-  <p id="txt">Opening Bot...</p>
-  <button id="manualBtn" class="btn">🚀 Tap Here to Open Bot</button>
+  <div class="container">
+    <div class="icon">🚀</div>
+    <h2 id="titleText">Open Bot</h2>
+    <p id="descText">Tap the button below to launch the bot directly with your referral link.</p>
+    
+    <button id="launchBtn" class="btn">🚀 Open Bot Now</button>
+  </div>
 
   <script>
-    // Initialize Telegram WebApp SDK
+    // 1. Initialize Telegram WebApp SDK safely
     if (window.Telegram && window.Telegram.WebApp) {
-      window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand();
+      try {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+      } catch(e) {}
     }
 
-    // Parse URL query string
-    function extractLink() {
+    // 2. Safely parse target link parameter from URL
+    function getTargetUrl() {
       const search = window.location.search;
       if (!search) return null;
+      
+      let raw = null;
       if (search.includes('link=')) {
-        return search.substring(search.indexOf('link=') + 5);
+        raw = search.substring(search.indexOf('link=') + 5);
       } else if (search.includes('url=')) {
-        return search.substring(search.indexOf('url=') + 4);
+        raw = search.substring(search.indexOf('url=') + 4);
       }
-      return null;
+      
+      if (!raw) return null;
+      
+      let decoded = decodeURIComponent(raw);
+      if (!decoded.startsWith('http://') && !decoded.startsWith('https://') && !decoded.startsWith('tg://')) {
+        decoded = 'https://' + decoded;
+      }
+      return decoded;
     }
 
-    let raw = extractLink();
-    if (raw) {
-      let target = decodeURIComponent(raw);
-      if (!target.startsWith('http://') && !target.startsWith('https://') && !target.startsWith('tg://')) {
-        target = 'https://' + target;
-      }
+    const targetUrl = getTargetUrl();
+    const launchBtn = document.getElementById('launchBtn');
 
-      function launchAndClose() {
+    if (targetUrl) {
+      // 3. User Touch Handler (Physical click unlocks Telegram permissions)
+      launchBtn.addEventListener('click', function() {
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
           try {
-            window.Telegram.WebApp.openTelegramLink(target);
-          } catch(e) {
-            window.location.href = target;
+            window.Telegram.WebApp.openTelegramLink(targetUrl);
+          } catch(err) {
+            window.location.href = targetUrl;
           }
         } else {
-          window.location.href = target;
+          window.location.href = targetUrl;
         }
-
-        // CLOSE WEB APP WINDOW IMMEDIATELY
-        setTimeout(function() {
-          if (window.Telegram && window.Telegram.WebApp) {
-            window.Telegram.WebApp.close();
-          }
-        }, 100);
-      }
-
-      // Attach button click listener
-      const btn = document.getElementById('manualBtn');
-      btn.addEventListener('click', launchAndClose);
-
-      // Execute auto-launch
-      setTimeout(launchAndClose, 150);
-
-      // Display manual button if auto-launch is blocked by mobile client
-      setTimeout(function() {
-        btn.style.display = 'inline-block';
-      }, 800);
-
+      });
     } else {
-      document.getElementById('txt').innerText = 'No destination link provided.';
+      document.getElementById('titleText').innerText = 'No Link Provided';
+      document.getElementById('descText').innerText = 'Missing target referral link.';
+      launchBtn.style.display = 'none';
     }
   </script>
 </body>
