@@ -4,13 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Opening Bot...</title>
-  <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
       background-color: #17212b;
       color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -20,11 +19,11 @@
     }
     .spinner {
       border: 4px solid rgba(255, 255, 255, 0.1);
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       border-left-color: #5288c1;
-      animation: spin 1s linear infinite;
+      animation: spin 0.8s linear infinite;
       margin-bottom: 16px;
     }
     @keyframes spin {
@@ -34,43 +33,71 @@
     p {
       font-size: 16px;
       color: #708499;
+      margin: 0;
+    }
+    a {
+      margin-top: 15px;
+      color: #64b5f6;
+      text-decoration: none;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div class="spinner"></div>
-  <p>Redirecting to Bot...</p>
+  <p id="status">Redirecting to Bot...</p>
+  <a id="direct-link" href="#" style="display:none;">Click here if not redirected</a>
 
   <script>
-    // Initialize Telegram WebApp SDK
-    window.Telegram.WebApp.ready();
-    window.Telegram.WebApp.expand();
+    // Initialize Telegram WebApp
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+    }
 
-    // Get query parameter "link" or "redirect"
-    const urlParams = new URLSearchParams(window.location.search);
-    let targetLink = urlParams.get('link') || urlParams.get('redirect') || urlParams.get('url');
+    // Safely parse raw URL without truncating parameters
+    function getTargetLink() {
+      const fullQuery = window.location.search;
+      if (fullQuery.includes('link=')) {
+        return fullQuery.substring(fullQuery.indexOf('link=') + 5);
+      } else if (fullQuery.includes('url=')) {
+        return fullQuery.substring(fullQuery.indexOf('url=') + 4);
+      }
+      return null;
+    }
 
-    if (targetLink) {
-      targetLink = decodeURIComponent(targetLink);
+    let rawLink = getTargetLink();
 
-      // Ensure protocol format
+    if (rawLink) {
+      let targetLink = decodeURIComponent(rawLink);
+
       if (!targetLink.startsWith('http://') && !targetLink.startsWith('https://') && !targetLink.startsWith('tg://')) {
         targetLink = 'https://' + targetLink;
       }
 
-      // Execute Telegram native deep-link forwarder
-      try {
-        window.Telegram.WebApp.openTelegramLink(targetLink);
-      } catch(e) {
-        window.location.href = targetLink;
-      }
+      const linkBtn = document.getElementById('direct-link');
+      linkBtn.href = targetLink;
 
-      // Automatically close overlay window after 300ms
-      setTimeout(() => {
-        window.Telegram.WebApp.close();
-      }, 300);
+      // Execute direct Telegram forward
+      setTimeout(function() {
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+          try {
+            window.Telegram.WebApp.openTelegramLink(targetLink);
+          } catch (e) {
+            window.location.href = targetLink;
+          }
+        } else {
+          window.location.href = targetLink;
+        }
+      }, 100);
+
+      // Show manual fallback link if browser slows down
+      setTimeout(function() {
+        linkBtn.style.display = 'block';
+      }, 1500);
+
     } else {
-      document.querySelector('p').innerText = 'Invalid redirect link provided.';
+      document.getElementById('status').innerText = 'No destination link specified.';
     }
   </script>
 </body>
