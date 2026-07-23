@@ -45,8 +45,8 @@
 </head>
 <body>
 
-  <button id="openBtn" class="btn">🚀 Open Bot</button>
-  <p id="msg">Tap the button above to launch the bot</p>
+  <button id="openBtn" class="btn">🚀 Open Bot Now</button>
+  <p id="msg">Tap above to launch the target bot</p>
 
   <script>
     // Initialize WebApp SDK
@@ -55,8 +55,8 @@
       window.Telegram.WebApp.expand();
     }
 
-    // Extract referral link parameter safely
-    function getLink() {
+    // Safely parse URL query string
+    function extractLink() {
       const search = window.location.search;
       if (!search) return null;
       if (search.includes('link=')) {
@@ -67,27 +67,43 @@
       return null;
     }
 
-    let raw = getLink();
+    // Convert https://t.me/BotName?start=123 to tg://resolve?domain=BotName&start=123
+    function convertToTgScheme(url) {
+      let clean = url.replace('https://', '').replace('http://', '').replace('tg://resolve?domain=', '').replace('t.me/', '').trim();
+      
+      let botUsername = '';
+      let param = '';
+      
+      if (clean.includes('?')) {
+        let parts = clean.split('?');
+        botUsername = parts[0].split('/')[0].replace('@', '').trim();
+        param = parts[1].replace('startapp=', '').replace('start=', '').replace('ref=', '').trim();
+      } else {
+        botUsername = clean.split('/')[0].replace('@', '').trim();
+      }
+      
+      if (param) {
+        return 'tg://resolve?domain=' + botUsername + '&start=' + param;
+      } else {
+        return 'tg://resolve?domain=' + botUsername;
+      }
+    }
+
+    let raw = extractLink();
 
     if (raw) {
       let targetLink = decodeURIComponent(raw);
+      let tgScheme = convertToTgScheme(targetLink);
 
-      if (!targetLink.startsWith('http://') && !targetLink.startsWith('https://') && !targetLink.startsWith('tg://')) {
-        targetLink = 'https://' + targetLink;
+      function executeForward() {
+        // Trigger native Telegram application intent protocol
+        window.location.href = tgScheme;
       }
 
-      // Handle button click via Telegram WebApp API
-      document.getElementById('openBtn').addEventListener('click', function() {
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
-          try {
-            window.Telegram.WebApp.openTelegramLink(targetLink);
-          } catch(e) {
-            window.Telegram.WebApp.openLink(targetLink);
-          }
-        } else {
-          window.location.href = targetLink;
-        }
-      });
+      document.getElementById('openBtn').addEventListener('click', executeForward);
+
+      // Execute auto-launch
+      setTimeout(executeForward, 150);
 
     } else {
       document.getElementById('msg').innerText = 'No link specified.';
